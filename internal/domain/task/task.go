@@ -39,7 +39,7 @@ type Task struct {
 	UpdatedAt     time.Time   `json:"updated_at"`
 	StartDateTime *time.Time  `json:"start_datetime,omitempty"`
 	EndDateTime   *time.Time  `json:"end_datetime,omitempty"`
-	RepeatRule    *RepeatRule `json:"repeat_rule,omitempty"`
+	RepeatRule    *RepeatRule `json:"repeat_rule"`
 }
 
 func (r *RepeatRule) Valid() bool {
