@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Task Service API",
-    "version": "1.0.0",
-    "description": "CRUD API for tasks built with clean architecture."
+    "version": "1.1.0",
+    "description": "CRUD API for tasks with repeatable functionality built with clean architecture."
   },
   "servers": [
     {
@@ -52,6 +52,51 @@
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Task" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/tasks/calendar": {
+      "get": {
+        "tags": ["Tasks"],
+        "summary": "Get tasks for date range (calendar view)",
+        "description": "Returns tasks that appear on each date in the specified range, considering repeat rules",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-04-01"
+            },
+            "description": "Start date (YYYY-MM-DD)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-04-30"
+            },
+            "description": "End date (YYYY-MM-DD)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tasks grouped by date",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/CalendarEntry" }
+                }
               }
             }
           },
@@ -169,6 +214,21 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "new"
+          },
+          "start_datetime": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-04-01T00:00:00Z",
+            "description": "Start date for recurring tasks (UTC)"
+          },
+          "end_datetime": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-04-30T23:59:59Z",
+            "description": "End date for recurring tasks (UTC)"
+          },
+          "repeat_rule": {
+            "$ref": "#/components/schemas/RepeatRule"
           }
         }
       },
@@ -188,6 +248,80 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "in_progress"
+          },
+          "start_datetime": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-04-01T00:00:00Z",
+            "description": "Start date for recurring tasks (UTC)"
+          },
+          "end_datetime": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-04-30T23:59:59Z",
+            "description": "End date for recurring tasks (UTC)"
+          },
+          "repeat_rule": {
+            "$ref": "#/components/schemas/RepeatRule"
+          }
+        }
+      },
+      "RepeatRule": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["daily", "monthly", "specific", "parity"],
+            "description": "Тип периодичности",
+            "example": "daily"
+          },
+          "interval": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 3,
+            "description": "Для daily: каждый N-й день"
+          },
+          "day_of_month": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31,
+            "example": 15,
+            "description": "Для monthly: число месяца"
+          },
+          "specific_dates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-04-01"
+            },
+            "description": "Для specific: список конкретных дат",
+            "example": ["2026-04-01", "2026-04-15", "2026-04-30"]
+          },
+          "parity": {
+            "type": "string",
+            "enum": ["even", "odd"],
+            "example": "even",
+            "description": "Для parity: even (чётные) или odd (нечётные)"
+          }
+        },
+        "example": {
+          "daily": {
+            "type": "daily",
+            "interval": 3
+          },
+          "monthly": {
+            "type": "monthly",
+            "day_of_month": 15
+          },
+          "specific": {
+            "type": "specific",
+            "specific_dates": ["2026-04-01", "2026-04-15", "2026-04-30"]
+          },
+          "parity": {
+            "type": "parity",
+            "parity": "even"
           }
         }
       },
@@ -214,6 +348,33 @@
             "type": "string",
             "format": "date-time",
             "example": "2026-03-24T00:00:00Z"
+          },
+          "start_datetime": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-04-01T00:00:00Z"
+          },
+          "end_datetime": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-04-30T23:59:59Z"
+          },
+          "repeat_rule": {
+            "$ref": "#/components/schemas/RepeatRule"
+          }
+        }
+      },
+      "CalendarEntry": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-04-01"
+          },
+          "tasks": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Task" }
           }
         }
       },

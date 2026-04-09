@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 
@@ -28,9 +29,12 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	created, err := h.usecase.Create(r.Context(), taskusecase.CreateInput{
-		Title:       req.Title,
-		Description: req.Description,
-		Status:      req.Status,
+		Title:         req.Title,
+		Description:   req.Description,
+		Status:        req.Status,
+		StartDateTime: req.StartDateTime,
+		EndDateTime:   req.EndDateTime,
+		RepeatRule:    req.RepeatRule,
 	})
 	if err != nil {
 		writeUsecaseError(w, err)
@@ -70,9 +74,12 @@ func (h *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updated, err := h.usecase.Update(r.Context(), id, taskusecase.UpdateInput{
-		Title:       req.Title,
-		Description: req.Description,
-		Status:      req.Status,
+		Title:         req.Title,
+		Description:   req.Description,
+		Status:        req.Status,
+		StartDateTime: req.StartDateTime,
+		EndDateTime:   req.EndDateTime,
+		RepeatRule:    req.RepeatRule,
 	})
 	if err != nil {
 		writeUsecaseError(w, err)
@@ -107,6 +114,48 @@ func (h *TaskHandler) List(w http.ResponseWriter, r *http.Request) {
 	response := make([]taskDTO, 0, len(tasks))
 	for i := range tasks {
 		response = append(response, newTaskDTO(&tasks[i]))
+	}
+
+	writeJSON(w, http.StatusOK, response)
+}
+
+func (h *TaskHandler) GetForDateRange(w http.ResponseWriter, r *http.Request) {
+	fromStr := r.URL.Query().Get("from")
+	toStr := r.URL.Query().Get("to")
+
+	if fromStr == "" || toStr == "" {
+		writeError(w, http.StatusBadRequest, errors.New("from and to query parameters are required"))
+		return
+	}
+
+	from, err := time.Parse("2006-01-02", fromStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errors.New("invalid from date format, use YYYY-MM-DD"))
+		return
+	}
+
+	to, err := time.Parse("2006-01-02", toStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errors.New("invalid to date format, use YYYY-MM-DD"))
+		return
+	}
+
+	tasksByDate, err := h.usecase.GetForDateRange(r.Context(), from, to)
+	if err != nil {
+		writeUsecaseError(w, err)
+		return
+	}
+
+	response := make([]calendarResponseDTO, 0, len(tasksByDate))
+	for date, tasks := range tasksByDate {
+		taskDTOs := make([]taskDTO, 0, len(tasks))
+		for _, task := range tasks {
+			taskDTOs = append(taskDTOs, newTaskDTO(task))
+		}
+		response = append(response, calendarResponseDTO{
+			Date:  date.Format("2006-01-02"),
+			Tasks: taskDTOs,
+		})
 	}
 
 	writeJSON(w, http.StatusOK, response)
