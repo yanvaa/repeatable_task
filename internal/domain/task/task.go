@@ -53,7 +53,8 @@ func (r *RepeatRule) Valid() bool {
 	case RepeatMonthly:
 		return r.DayOfMonth >= 1 && r.DayOfMonth <= 30
 	case RepeatSpecific:
-		return len(r.SpecificDates) > 0
+		_, err := time.Parse("2006-01-02", r.SpecificDate)
+		return err == nil
 	case RepeatParity:
 		return r.Parity == "even" || r.Parity == "odd"
 	default:

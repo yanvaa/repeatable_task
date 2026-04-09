@@ -155,7 +155,7 @@ func (s *Service) appearsOnDate(task *taskdomain.Task, datetime time.Time) bool 
 
 	case taskdomain.RepeatSpecific:
 		dateStr := datetime.Format("2006-01-02")
-		if specificDate == dateStr {
+		if task.RepeatRule.SpecificDate == dateStr {
 			return true
 		}
 		return false
